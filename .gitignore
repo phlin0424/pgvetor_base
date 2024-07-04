@@ -1,3 +1,5 @@
 .venv/
 local_test*
 *__pycache__*
+.ruff_cache
+migrations/versions
