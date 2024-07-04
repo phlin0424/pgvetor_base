@@ -1,12 +1,12 @@
 from logging.config import fileConfig
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.ext.asyncio import AsyncConnection
+
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 import sqlalchemy
 from sqlalchemy.orm import Session
+
 from alembic import context
-from db import Base
+from models.db_model import Base
 import pgvector
 
 # this is the Alembic Config object, which provides
@@ -54,6 +54,29 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def run_migrations_online() -> None:
+    """Run migrations in 'online' mode.
+
+    In this scenario we need to create an Engine
+    and associate a connection with the context.
+
+    """
+
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    with connectable.connect() as connection:
+        context.configure(connection=connection, target_metadata=target_metadata)
+
+        with context.begin_transaction():
+            context.run_migrations()
+
+        create_vector_extension(connection)
+
+
 def create_vector_extension(connection) -> None:
     try:
         with Session(connection) as session:  # type: ignore[arg-type]
@@ -89,28 +112,6 @@ def do_run_migrations(connection) -> None:
 
     with context.begin_transaction():
         context.run_migrations()
-
-
-async def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
-    """
-    # connectable = engine_from_config(
-    #     config.get_section(config.config_ini_section, {}),
-    #     prefix="sqlalchemy.",
-    #     poolclass=pool.NullPool,
-    # )
-    db_url = config.get_section(config.config_ini_section, {})["sqlalchemy.url"]
-    connectable = create_async_engine(db_url, future=True, echo=True)
-
-    async with connectable.connect() as connection:
-        await context.configure(connection=connection, target_metadata=target_metadata)
-
-        with context.begin_transaction():
-            context.run_migrations()
 
 
 if context.is_offline_mode():

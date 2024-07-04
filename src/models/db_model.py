@@ -1,6 +1,8 @@
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Column, Integer, String
-from db import Base
+from sqlalchemy.orm import declarative_base
+
+Base = declarative_base()
 
 
 # Create a table Model which inherit from Base
